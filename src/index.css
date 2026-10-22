@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — raw RGB triplets so opacity utilities and color-mix
+ * work everywhere. Dark is the DEFAULT theme; light applies when the
+ * `dark` class is absent from <html>.
+ */
+:root {
+  --rgb-canvas: 246 246 248;
+  --rgb-surface: 255 255 255;
+  --rgb-surface-hover: 240 240 244;
+  --rgb-border: 228 228 234;
+  --rgb-text: 26 26 31;
+  --rgb-muted: 107 107 118;
+  --rgb-accent: 192 38 211;
+  --accent-soft-alpha: 0.12;
+  --grid-dot-alpha: 0.5;
+}
+
+:root.dark {
+  --rgb-canvas: 27 27 29;
+  --rgb-surface: 35 35 38;
+  --rgb-surface-hover: 44 44 48;
+  --rgb-border: 52 52 58;
+  --rgb-text: 236 236 241;
+  --rgb-muted: 154 154 165;
+  --rgb-accent: 217 70 239;
+  --accent-soft-alpha: 0.15;
+  --grid-dot-alpha: 0.4;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply overflow-hidden bg-canvas font-sans text-text antialiased;
+}
