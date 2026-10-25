@@ -10,8 +10,8 @@ export default function BoardCanvas({ zoom = 1, offsetX = 0, offsetY = 0 }) {
       aria-hidden="true"
       className="absolute inset-0"
       style={{
-        backgroundImage:
-          'radial-gradient(rgb(var(--rgb-border) / var(--grid-dot-alpha)) 1px, transparent 1px)',
+      backgroundImage:
+        'radial-gradient(rgb(var(--rgb-grid-dot) / var(--grid-dot-alpha)) 1px, transparent 1px)',
         backgroundSize: `${gridSize}px ${gridSize}px`,
         backgroundPosition: `${offsetX}px ${offsetY}px`,
       }}

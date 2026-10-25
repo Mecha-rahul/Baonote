@@ -115,7 +115,7 @@ baonote/
 
 **Frontend**
 - [x] App shell: sidebar, top bar, bottom toolbar, zoom control
-- [ ] Canvas with pan and zoom
+- [x] Canvas with pan and zoom
 - [ ] Drag, resize, and select cards
 - [ ] Note, todo, link, image, and code cards
 - [ ] Nested boards and breadcrumbs
@@ -148,7 +148,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Author
 
-Built by **<rahul>**, a student developer building the tool they wished existed.
+Built by **<rahul>**, a student developer building the tool i wished existed.
 
 
 ---

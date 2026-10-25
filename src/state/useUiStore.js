@@ -12,6 +12,7 @@ function getInitialTheme() {
  * Shared UI state: theme (persisted to localStorage, dark is default),
  * sidebar visibility, and the active board tool.
  */
+
 const useUiStore = create((set) => ({
   theme: getInitialTheme(),
   sidebarOpen: typeof window !== 'undefined' ? window.innerWidth >= 1024 : true,

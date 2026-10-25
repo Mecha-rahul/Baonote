@@ -16,7 +16,8 @@
   --rgb-muted: 107 107 118;
   --rgb-accent: 192 38 211;
   --accent-soft-alpha: 0.12;
-  --grid-dot-alpha: 0.5;
+  --rgb-grid-dot: 150 150 165;
+  --grid-dot-alpha: 0.55;
 }
 
 :root.dark {
@@ -28,7 +29,8 @@
   --rgb-muted: 154 154 165;
   --rgb-accent: 217 70 239;
   --accent-soft-alpha: 0.15;
-  --grid-dot-alpha: 0.4;
+  --rgb-grid-dot: 90 90 100;
+  --grid-dot-alpha: 0.5;
 }
 
 html,
@@ -39,4 +41,15 @@ body,
 
 body {
   @apply overflow-hidden bg-canvas font-sans text-text antialiased;
+}
+
+/* Space + drag panning cursor: open hand while Space is held,
+   closed hand while the mouse button is pressed. */
+.canvas.space-pan,
+.canvas.space-pan * {
+  cursor: grab;
+}
+.canvas.space-pan:active,
+.canvas.space-pan:active * {
+  cursor: grabbing;
 }

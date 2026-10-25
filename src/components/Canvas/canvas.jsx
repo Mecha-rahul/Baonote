@@ -1,23 +1,33 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCanvasStore } from '../../state/useCanvasStore'
 import useUiStore from '../../state/useUiStore'
 import { screenToCanvas } from '../../lib/coords'
+import { rectFromPoints, rectsOverlap } from '../../lib/geometry'
+import useCanvasShortcuts from '../../hooks/useCanvasShortcuts'
 import CardShell from './CardShell'
+import SelectionBox from './SelectionBox'
 
 const DOT_GAP = 24 // px between dots at 100% zoom
+const NOTE_W = 220
+const NOTE_H = 140
+const MARQUEE_THRESHOLD = 3 // px of movement before a click becomes a drag-select
 
 export default function Canvas() {
   const containerRef = useRef(null)
   const panRef = useRef(null) // { lastX, lastY } while panning, else null
+  const marqueeRef = useRef(null) // { startX, startY, baseIds, active } while drag-selecting
+  const lastCreatedRef = useRef(0) // time a note was last created (to ignore its double-click)
+  const [marqueeRect, setMarqueeRect] = useState(null) // the visible box, in screen pixels
 
   const viewport = useCanvasStore((s) => s.viewport)
   const cards = useCanvasStore((s) => s.cards)
-  const addCard = useCanvasStore((s) => s.addCard)
   const panBy = useCanvasStore((s) => s.panBy)
-  const clearSelection = useCanvasStore((s) => s.clearSelection)
+  const spacePressed = useCanvasStore((s) => s.spacePressed)
 
   const activeTool = useUiStore((s) => s.activeTool)
   const setActiveTool = useUiStore((s) => s.setActiveTool)
+
+  useCanvasShortcuts()
 
   // wheel: Ctrl/Cmd = zoom toward cursor, otherwise pan.
   // Listens on window so the browser's page-zoom is blocked everywhere,
@@ -44,32 +54,41 @@ export default function Canvas() {
     return () => window.removeEventListener('wheel', onWheel)
   }, [])
 
-  // track the Space key (ignored while typing in a card)
-  useEffect(() => {
-    const typing = () =>
-      ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)
+  // mouse position relative to the canvas container
+  const localPoint = (e) => {
+    const rect = containerRef.current.getBoundingClientRect()
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+  }
 
-    const down = (e) => {
-      if (e.code === 'Space' && !typing()) {
-        e.preventDefault()
-        useCanvasStore.getState().setSpacePressed(true)
-      }
-    }
-    const up = (e) => {
-      if (e.code === 'Space') useCanvasStore.getState().setSpacePressed(false)
-    }
+  // creates a note centered on a screen point
+  const createNoteAt = (screenPoint, startEditing) => {
+    const { viewport, addCard, setEditingId } = useCanvasStore.getState()
+    const p = screenToCanvas(screenPoint.x, screenPoint.y, viewport)
+    const id = crypto.randomUUID()
+    addCard({
+      id,
+      type: 'note',
+      x: p.x - NOTE_W / 2,
+      y: p.y - NOTE_H / 2,
+      w: NOTE_W,
+      h: NOTE_H,
+      content: { text: '' },
+    })
+    lastCreatedRef.current = Date.now()
+    if (startEditing) setEditingId(id)
+  }
 
-    window.addEventListener('keydown', down)
-    window.addEventListener('keyup', up)
-    return () => {
-      window.removeEventListener('keydown', down)
-      window.removeEventListener('keyup', up)
+  const releaseCapture = (e) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId)
     }
-  }, [])
+  }
 
   const handlePointerDown = (e) => {
-    const isMiddle = e.button === 1
-    if (isMiddle || useCanvasStore.getState().spacePressed) {
+    const store = useCanvasStore.getState()
+
+    // pan: middle mouse, or Space held
+    if (e.button === 1 || store.spacePressed) {
       e.preventDefault() // stops the browser's middle-click autoscroll
       panRef.current = { lastX: e.clientX, lastY: e.clientY }
       e.currentTarget.setPointerCapture(e.pointerId)
@@ -77,34 +96,67 @@ export default function Canvas() {
     }
     if (e.button !== 0) return
 
+    const point = localPoint(e)
+
+    // Note tool: place a note, then go back to the Select tool
     if (activeTool === 'note') {
-      const rect = containerRef.current.getBoundingClientRect()
-      const p = screenToCanvas(e.clientX - rect.left, e.clientY - rect.top, viewport)
-      addCard({
-        id: crypto.randomUUID(),
-        type: 'note',
-        x: p.x,
-        y: p.y,
-        w: 220,
-        h: 140,
-        content: { text: '' },
-      })
+      createNoteAt(point, false)
       setActiveTool('select')
-    } else {
-      clearSelection()
+      return
     }
+
+    // otherwise: empty canvas. Clear the selection (unless Shift) and start a drag-select box
+    if (!e.shiftKey) store.clearSelection()
+    marqueeRef.current = {
+      startX: point.x,
+      startY: point.y,
+      baseIds: e.shiftKey ? store.selectedIds : [],
+      active: false,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
   }
 
   const handlePointerMove = (e) => {
-    if (!panRef.current) return
-    panBy(e.clientX - panRef.current.lastX, e.clientY - panRef.current.lastY)
-    panRef.current = { lastX: e.clientX, lastY: e.clientY }
+    if (panRef.current) {
+      panBy(e.clientX - panRef.current.lastX, e.clientY - panRef.current.lastY)
+      panRef.current = { lastX: e.clientX, lastY: e.clientY }
+      return
+    }
+
+    const m = marqueeRef.current
+    if (!m) return
+
+    const point = localPoint(e)
+    if (!m.active) {
+      if (Math.hypot(point.x - m.startX, point.y - m.startY) < MARQUEE_THRESHOLD) return
+      m.active = true
+    }
+
+    // the visible box (screen pixels)
+    setMarqueeRect(rectFromPoints(m.startX, m.startY, point.x, point.y))
+
+    // the same box on the board (canvas units), to test against cards
+    const { viewport, cards, setSelection } = useCanvasStore.getState()
+    const a = screenToCanvas(m.startX, m.startY, viewport)
+    const b = screenToCanvas(point.x, point.y, viewport)
+    const box = rectFromPoints(a.x, a.y, b.x, b.y)
+    const hit = cards.filter((c) => rectsOverlap(box, c)).map((c) => c.id)
+    setSelection([...new Set([...m.baseIds, ...hit])])
   }
 
   const handlePointerUp = (e) => {
-    if (!panRef.current) return
+    if (!panRef.current && !marqueeRef.current) return
     panRef.current = null
-    e.currentTarget.releasePointerCapture(e.pointerId)
+    marqueeRef.current = null
+    setMarqueeRect(null)
+    releaseCapture(e)
+  }
+
+  // double-click on empty canvas: new note, ready to type
+  const handleDoubleClick = (e) => {
+    if (e.target !== e.currentTarget) return // the double-click landed on a card
+    if (Date.now() - lastCreatedRef.current < 500) return // the Note tool just made one
+    createNoteAt(localPoint(e), true)
   }
 
   const gap = DOT_GAP * viewport.zoom
@@ -112,17 +164,20 @@ export default function Canvas() {
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 touch-none overflow-hidden"
+      className={`canvas absolute inset-0 touch-none overflow-hidden ${
+        spacePressed ? 'space-pan' : ''
+      }`}
       style={{
-        // replace this color with the dot color you liked from your old BoardCanvas
         backgroundImage:
-          'radial-gradient(circle, rgba(255,255,255,0.14) 1px, transparent 1px)',
+          'radial-gradient(circle, rgb(var(--rgb-grid-dot) / var(--grid-dot-alpha)) 1px, transparent 1px)',
         backgroundSize: `${gap}px ${gap}px`,
         backgroundPosition: `${viewport.offsetX}px ${viewport.offsetY}px`,
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onDoubleClick={handleDoubleClick}
     >
       <div
         className="absolute left-0 top-0 origin-top-left"
@@ -134,6 +189,8 @@ export default function Canvas() {
           <CardShell key={card.id} card={card} />
         ))}
       </div>
+
+      {marqueeRect && <SelectionBox rect={marqueeRect} />}
     </div>
   )
 }
