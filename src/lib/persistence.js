@@ -75,6 +75,21 @@ function sanitize(persisted) {
     )
   }
 
+  // arrows: both ends must be real cards that survived the filter above
+  if (persisted && Array.isArray(persisted.edges)) {
+    const cardIds = new Set((out.cards || []).map((c) => c.id))
+    out.edges = persisted.edges.filter(
+      (e) =>
+        e &&
+        typeof e.id === 'string' &&
+        typeof e.fromId === 'string' &&
+        typeof e.toId === 'string' &&
+        e.fromId !== e.toId &&
+        cardIds.has(e.fromId) &&
+        cardIds.has(e.toId)
+    )
+  }
+
   const v = persisted && persisted.viewport
   if (v && isNum(v.zoom) && isNum(v.offsetX) && isNum(v.offsetY)) {
     out.viewport = { zoom: clampZoom(v.zoom), offsetX: v.offsetX, offsetY: v.offsetY }
@@ -88,8 +103,12 @@ export const persistOptions = {
   name: STORAGE_KEY,
   version: 1, // bump this (and add a `migrate`) if the card shape ever changes
   storage: createJSONStorage(() => createDebouncedStorage(SAVE_DELAY)),
-  // save ONLY these two things (not history, selection, clipboard, or editing state)
-  partialize: (state) => ({ cards: state.cards, viewport: state.viewport }),
+  // save ONLY these things (not history, selection, clipboard, or editing state)
+  partialize: (state) => ({
+    cards: state.cards,
+    edges: state.edges,
+    viewport: state.viewport,
+  }),
   // merge what we loaded into the store's defaults, after cleaning it
   merge: (persisted, current) => ({ ...current, ...sanitize(persisted) }),
 }

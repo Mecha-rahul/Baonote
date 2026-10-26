@@ -1,12 +1,15 @@
-
 import { useEffect } from 'react'
 import { useCanvasStore } from '../state/useCanvasStore'
+import useUiStore from '../state/useUiStore'
 
 const isTyping = () => {
   const el = document.activeElement
   return (
     !!el &&
-    (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)
+    (el.tagName === 'INPUT' ||
+      el.tagName === 'TEXTAREA' ||
+      el.tagName === 'SELECT' ||
+      el.isContentEditable)
   )
 }
 
@@ -28,12 +31,15 @@ export default function useCanvasShortcuts() {
 
       if (key === 'delete' || key === 'backspace') {
         e.preventDefault()
-        s.deleteSelected()
+        s.deleteSelected() // removes selected cards (and their arrows) or the selected arrow
         return
       }
 
       if (key === 'escape') {
+        s.cancelConnect() // give up an arrow that is being drawn
         s.clearSelection()
+        const ui = useUiStore.getState()
+        if (ui.activeTool !== 'select') ui.setActiveTool('select')
         return
       }
 

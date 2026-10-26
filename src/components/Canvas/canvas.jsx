@@ -3,20 +3,20 @@ import { useCanvasStore } from '../../state/useCanvasStore'
 import useUiStore from '../../state/useUiStore'
 import { screenToCanvas } from '../../lib/coords'
 import { rectFromPoints, rectsOverlap } from '../../lib/geometry'
+import { buildCard, isCardTool } from '../../lib/cardDefaults'
 import useCanvasShortcuts from '../../hooks/useCanvasShortcuts'
 import CardShell from './CardShell'
 import SelectionBox from './SelectionBox'
+import EdgesLayer from './EdgesLayer'
 
 const DOT_GAP = 24 // px between dots at 100% zoom
-const NOTE_W = 220
-const NOTE_H = 140
 const MARQUEE_THRESHOLD = 3 // px of movement before a click becomes a drag-select
 
 export default function Canvas() {
   const containerRef = useRef(null)
   const panRef = useRef(null) // { lastX, lastY } while panning, else null
   const marqueeRef = useRef(null) // { startX, startY, baseIds, active } while drag-selecting
-  const lastCreatedRef = useRef(0) // time a note was last created (to ignore its double-click)
+  const lastCreatedRef = useRef(0) // time a card was last created (to ignore its double-click)
   const [marqueeRect, setMarqueeRect] = useState(null) // the visible box, in screen pixels
 
   const viewport = useCanvasStore((s) => s.viewport)
@@ -39,6 +39,19 @@ export default function Canvas() {
 
       const el = containerRef.current
       if (!el || !el.contains(e.target)) return
+
+      // plain scrolling over a todo list / code box that can scroll: let it scroll itself
+      if (!zoomGesture) {
+        const scrollable = e.target.closest?.('[data-scrollable]')
+        if (
+          scrollable &&
+          (scrollable.scrollHeight > scrollable.clientHeight ||
+            scrollable.scrollWidth > scrollable.clientWidth)
+        ) {
+          return
+        }
+      }
+
       e.preventDefault()
 
       const { zoomAtPoint, panBy, viewport } = useCanvasStore.getState()
@@ -60,22 +73,14 @@ export default function Canvas() {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
   }
 
-  // creates a note centered on a screen point
-  const createNoteAt = (screenPoint, startEditing) => {
+  // creates a card of any type, centered on a screen point
+  const createCardAt = (type, screenPoint, startEditing) => {
     const { viewport, addCard, setEditingId } = useCanvasStore.getState()
     const p = screenToCanvas(screenPoint.x, screenPoint.y, viewport)
-    const id = crypto.randomUUID()
-    addCard({
-      id,
-      type: 'note',
-      x: p.x - NOTE_W / 2,
-      y: p.y - NOTE_H / 2,
-      w: NOTE_W,
-      h: NOTE_H,
-      content: { text: '' },
-    })
+    const card = buildCard(type, p.x, p.y)
+    addCard(card)
     lastCreatedRef.current = Date.now()
-    if (startEditing) setEditingId(id)
+    if (startEditing) setEditingId(card.id)
   }
 
   const releaseCapture = (e) => {
@@ -98,9 +103,10 @@ export default function Canvas() {
 
     const point = localPoint(e)
 
-    // Note tool: place a note, then go back to the Select tool
-    if (activeTool === 'note') {
-      createNoteAt(point, false)
+    // a card tool (note, todo, code, link): place that card, then go back to Select.
+    // a new link card opens its form straight away so you can paste the address.
+    if (isCardTool(activeTool)) {
+      createCardAt(activeTool, point, activeTool === 'link')
       setActiveTool('select')
       return
     }
@@ -155,8 +161,8 @@ export default function Canvas() {
   // double-click on empty canvas: new note, ready to type
   const handleDoubleClick = (e) => {
     if (e.target !== e.currentTarget) return // the double-click landed on a card
-    if (Date.now() - lastCreatedRef.current < 500) return // the Note tool just made one
-    createNoteAt(localPoint(e), true)
+    if (Date.now() - lastCreatedRef.current < 500) return // a tool just made a card
+    createCardAt('note', localPoint(e), true)
   }
 
   const gap = DOT_GAP * viewport.zoom
@@ -185,6 +191,8 @@ export default function Canvas() {
           transform: `translate(${viewport.offsetX}px, ${viewport.offsetY}px) scale(${viewport.zoom})`,
         }}
       >
+        {/* arrows sit under the cards but move and zoom with them */}
+        <EdgesLayer />
         {cards.map((card) => (
           <CardShell key={card.id} card={card} />
         ))}

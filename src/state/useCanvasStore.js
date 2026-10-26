@@ -8,10 +8,13 @@ const OFFSET = 24 // how far duplicates/pastes shift, in canvas units
 
 // ---------- helpers (outside the store, pure functions) ----------
 
-// Saves the CURRENT cards as an undo step and clears the redo stack.
-// Called inside an action right before it changes the cards.
+// the part of the state that undo/redo restores
+const snapshot = (s) => ({ cards: s.cards, edges: s.edges })
+
+// Saves the CURRENT cards + edges as an undo step and clears the redo stack.
+// Called inside an action right before it changes them.
 const pushHistory = (s) => ({
-  past: [...s.past, s.cards].slice(-MAX_HISTORY),
+  past: [...s.past, snapshot(s)].slice(-MAX_HISTORY),
   future: [],
 })
 
@@ -52,13 +55,16 @@ export const useCanvasStore = create(
     (set) => ({
   viewport: { zoom: 1, offsetX: 0, offsetY: 0 },
   cards: [],
+  edges: [], // arrows: { id, fromId, toId }
   selectedIds: [],
+  selectedEdgeId: null, // one selected arrow (or null)
+  connecting: null, // while dragging a new arrow: { fromId, x, y } (x, y = canvas coords)
   editingId: null,
   spacePressed: false,
 
   clipboard: [], // cards copied with Ctrl+C (kept inside the app)
   pasteCount: 0, // so repeated pastes cascade instead of stacking exactly
-  past: [], // undo stack: older versions of `cards`
+  past: [], // undo stack: older { cards, edges } snapshots
   future: [], // redo stack
   lastTextEditId: null, // so a whole typing session is ONE undo step
 
@@ -89,9 +95,12 @@ export const useCanvasStore = create(
       const previous = s.past[s.past.length - 1]
       return {
         past: s.past.slice(0, -1),
-        future: [s.cards, ...s.future],
-        cards: previous,
-        selectedIds: s.selectedIds.filter((id) => previous.some((c) => c.id === id)),
+        future: [snapshot(s), ...s.future],
+        cards: previous.cards,
+        edges: previous.edges,
+        selectedIds: s.selectedIds.filter((id) => previous.cards.some((c) => c.id === id)),
+        selectedEdgeId: null,
+        connecting: null,
         editingId: null,
         lastTextEditId: null,
       }
@@ -102,10 +111,13 @@ export const useCanvasStore = create(
       if (s.future.length === 0) return s
       const [next, ...rest] = s.future
       return {
-        past: [...s.past, s.cards],
+        past: [...s.past, snapshot(s)],
         future: rest,
-        cards: next,
-        selectedIds: s.selectedIds.filter((id) => next.some((c) => c.id === id)),
+        cards: next.cards,
+        edges: next.edges,
+        selectedIds: s.selectedIds.filter((id) => next.cards.some((c) => c.id === id)),
+        selectedEdgeId: null,
+        connecting: null,
         editingId: null,
         lastTextEditId: null,
       }
@@ -117,6 +129,7 @@ export const useCanvasStore = create(
       ...pushHistory(s),
       cards: [...s.cards, { ...card, z: nextZ(s.cards) }],
       selectedIds: [card.id],
+      selectedEdgeId: null,
     })),
 
   // moves one card (kept from before)
@@ -141,6 +154,28 @@ export const useCanvasStore = create(
       cards: s.cards.map((c) => (c.id === id ? { ...c, ...patch } : c)),
     })),
 
+  // change part of a card's content as ONE undo step
+  // (add/remove/toggle a todo item, change code language, ...)
+  updateCardContent: (id, patch) =>
+    set((s) => ({
+      ...pushHistory(s),
+      lastTextEditId: null, // so the next typing starts a fresh undo step
+      cards: s.cards.map((c) =>
+        c.id === id ? { ...c, content: { ...c.content, ...patch } } : c
+      ),
+    })),
+
+  // typing into a card's content. The first keystroke of a "session"
+  // saves an undo step; later keystrokes with the same sessionKey don't.
+  typeInCard: (id, patch, sessionKey) =>
+    set((s) => ({
+      ...(s.lastTextEditId === sessionKey ? {} : pushHistory(s)),
+      lastTextEditId: sessionKey,
+      cards: s.cards.map((c) =>
+        c.id === id ? { ...c, content: { ...c.content, ...patch } } : c
+      ),
+    })),
+
   updateCardText: (id, text) =>
     set((s) => ({
       // only the FIRST keystroke of an editing session saves an undo step
@@ -151,13 +186,21 @@ export const useCanvasStore = create(
       ),
     })),
 
+  // deletes the selected cards (and every arrow attached to them) and/or the selected arrow
   deleteSelected: () =>
     set((s) => {
-      if (s.selectedIds.length === 0) return s
+      if (s.selectedIds.length === 0 && !s.selectedEdgeId) return s
       return {
         ...pushHistory(s),
         cards: s.cards.filter((c) => !s.selectedIds.includes(c.id)),
+        edges: s.edges.filter(
+          (e) =>
+            e.id !== s.selectedEdgeId &&
+            !s.selectedIds.includes(e.fromId) &&
+            !s.selectedIds.includes(e.toId)
+        ),
         selectedIds: [],
+        selectedEdgeId: null,
         editingId: null,
       }
     }),
@@ -171,6 +214,7 @@ export const useCanvasStore = create(
         ...pushHistory(s),
         cards: [...s.cards, ...copies],
         selectedIds: copies.map((c) => c.id),
+        selectedEdgeId: null,
       }
     }),
 
@@ -190,6 +234,7 @@ export const useCanvasStore = create(
         ...pushHistory(s),
         cards: [...s.cards, ...copies],
         selectedIds: copies.map((c) => c.id),
+        selectedEdgeId: null,
         pasteCount: count,
       }
     }),
@@ -208,6 +253,45 @@ export const useCanvasStore = create(
         : { ...pushHistory(s), cards: reorder(s.cards, s.selectedIds, false) }
     ),
 
+  // ----- arrows -----
+  // pressed on a card with the Line tool: remember where the arrow starts
+  startConnect: (fromId, x, y) => set({ connecting: { fromId, x, y } }),
+
+  // pointer moved: update the free end of the preview arrow
+  moveConnect: (x, y) =>
+    set((s) => (s.connecting ? { connecting: { ...s.connecting, x, y } } : s)),
+
+  // pointer released: connect to `toId` (a card id) or give up (null)
+  endConnect: (toId) =>
+    set((s) => {
+      const c = s.connecting
+      if (!c) return s
+      const done = { connecting: null }
+      const bothExist =
+        s.cards.some((card) => card.id === c.fromId) &&
+        s.cards.some((card) => card.id === toId)
+      if (!toId || toId === c.fromId || !bothExist) return done
+      // one arrow per pair of cards (either direction)
+      const exists = s.edges.some(
+        (e) =>
+          (e.fromId === c.fromId && e.toId === toId) ||
+          (e.fromId === toId && e.toId === c.fromId)
+      )
+      if (exists) return done
+      const edge = { id: crypto.randomUUID(), fromId: c.fromId, toId }
+      return {
+        ...done,
+        ...pushHistory(s),
+        edges: [...s.edges, edge],
+        selectedEdgeId: edge.id,
+        selectedIds: [],
+      }
+    }),
+
+  cancelConnect: () => set({ connecting: null }),
+
+  selectEdge: (id) => set({ selectedEdgeId: id, selectedIds: [], editingId: null }),
+
   // ----- selection -----
   // click: select only this card and bring it to the front (kept from before)
   selectCard: (id) =>
@@ -215,6 +299,7 @@ export const useCanvasStore = create(
       const top = nextZ(s.cards)
       return {
         selectedIds: [id],
+        selectedEdgeId: null,
         cards: s.cards.map((c) => (c.id === id ? { ...c, z: top } : c)),
       }
     }),
@@ -222,17 +307,19 @@ export const useCanvasStore = create(
   // shift-click: add the card to the selection, or remove it if already selected
   toggleSelect: (id) =>
     set((s) => ({
+      selectedEdgeId: null,
       selectedIds: s.selectedIds.includes(id)
         ? s.selectedIds.filter((x) => x !== id)
         : [...s.selectedIds, id],
     })),
 
   // replaces the selection (used by drag-select)
-  setSelection: (ids) => set({ selectedIds: ids }),
+  setSelection: (ids) => set({ selectedIds: ids, selectedEdgeId: null }),
 
-  selectAll: () => set((s) => ({ selectedIds: s.cards.map((c) => c.id) })),
+  selectAll: () =>
+    set((s) => ({ selectedIds: s.cards.map((c) => c.id), selectedEdgeId: null })),
 
-  clearSelection: () => set({ selectedIds: [] }),
+  clearSelection: () => set({ selectedIds: [], selectedEdgeId: null }),
   }),
     persistOptions
   )
