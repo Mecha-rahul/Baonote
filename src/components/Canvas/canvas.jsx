@@ -71,7 +71,7 @@ export default function Canvas() {
   const localPoint = (e) => {
     const rect = containerRef.current.getBoundingClientRect()
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
-  }
+  } 
 
   // creates a card of any type, centered on a screen point
   const createCardAt = (type, screenPoint, startEditing) => {

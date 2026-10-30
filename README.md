@@ -116,10 +116,10 @@ baonote/
 **Frontend**
 - [x] App shell: sidebar, top bar, bottom toolbar, zoom control
 - [x] Canvas with pan and zoom
-- [ ] Drag, resize, and select cards
-- [ ] Note, todo, link, image, and code cards
+- [x] Drag, resize, and select cards
+- [x] Note, todo, link, image, and code cards
 - [ ] Nested boards and breadcrumbs
-- [ ] Undo and redo
+- [x] Undo and redo
 - [ ] Command palette
 - [ ] Dark and light theme polish
 
