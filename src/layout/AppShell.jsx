@@ -1,4 +1,4 @@
-import Canvas from '../components/canvas/Canvas.jsx'
+import Canvas from '../components/Canvas/canvas.jsx'
 import TopBar from './TopBar.jsx'
 import Sidebar from './Sidebar.jsx'
 import BottomToolbar from './BottomToolbar.jsx'
