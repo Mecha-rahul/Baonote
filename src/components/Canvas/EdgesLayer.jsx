@@ -1,10 +1,12 @@
 import { useCanvasStore } from '../../state/useCanvasStore'
-import { borderPoint, edgeLine } from '../../lib/edges'
+import { borderPoint, edgePath } from '../../lib/edges'
+import { EDGE_COLORS, resolveEdgeStyle, dashProps } from '../../lib/edgeStyle'
 
-// placeholder colors, swap for design tokens later
-const COLOR = '#9ca3af'
-const COLOR_SELECTED = '#d946ef'
+// placeholder color, swap for a design token later
+const ACCENT = '#d946ef'
 
+// one arrow head per color. orient="auto-start-reverse" makes the SAME
+// marker point outward at BOTH ends of a line (markerStart and markerEnd).
 function Marker({ id, color }) {
   return (
     <marker
@@ -12,9 +14,9 @@ function Marker({ id, color }) {
       viewBox="0 0 10 10"
       refX="9"
       refY="5"
-      markerWidth="7"
-      markerHeight="7"
-      orient="auto"
+      markerWidth="6"
+      markerHeight="6"
+      orient="auto-start-reverse"
     >
       <path d="M0 0 L10 5 L0 10 z" fill={color} />
     </marker>
@@ -29,6 +31,9 @@ export default function EdgesLayer() {
   const selectEdge = useCanvasStore((s) => s.selectEdge)
 
   const byId = new Map(cards.map((c) => [c.id, c]))
+
+  // only define arrow heads for the colors that are actually in use
+  const usedColors = new Set(edges.map((e) => resolveEdgeStyle(e).color))
 
   // the dashed preview while you drag from a card
   let preview = null
@@ -49,36 +54,53 @@ export default function EdgesLayer() {
       style={{ pointerEvents: 'none' }}
     >
       <defs>
-        <Marker id="baonote-arrow" color={COLOR} />
-        <Marker id="baonote-arrow-selected" color={COLOR_SELECTED} />
+        {[...usedColors].map((name) => (
+          <Marker key={name} id={`baonote-arrow-${name}`} color={EDGE_COLORS[name]} />
+        ))}
+        <Marker id="baonote-arrow-preview" color={ACCENT} />
       </defs>
 
       {edges.map((edge) => {
         const from = byId.get(edge.fromId)
         const to = byId.get(edge.toId)
         if (!from || !to) return null
-        const line = edgeLine(from, to)
-        if (!line) return null
+        const style = resolveEdgeStyle(edge)
+        const d = edgePath(from, to, style.shape)
+        if (!d) return null
+
         const selected = edge.id === selectedEdgeId
+        const marker = `url(#baonote-arrow-${style.color})`
+
         return (
           <g key={edge.id}>
-            <line
-              x1={line.a.x}
-              y1={line.a.y}
-              x2={line.b.x}
-              y2={line.b.y}
-              stroke={selected ? COLOR_SELECTED : COLOR}
-              strokeWidth={2}
-              markerEnd={`url(#${selected ? 'baonote-arrow-selected' : 'baonote-arrow'})`}
+            {/* selection glow: a wider soft line UNDER the arrow (the arrow keeps its own color) */}
+            {selected && (
+              <path
+                d={d}
+                fill="none"
+                stroke={ACCENT}
+                strokeOpacity={0.35}
+                strokeWidth={style.width + 8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+            <path
+              d={d}
+              fill="none"
+              stroke={EDGE_COLORS[style.color]}
+              strokeWidth={style.width}
+              strokeLinejoin="round"
+              {...dashProps(style.dash, style.width)}
+              markerStart={style.startArrow === 'arrow' ? marker : undefined}
+              markerEnd={style.endArrow === 'arrow' ? marker : undefined}
             />
             {/* wide invisible line so thin arrows are easy to click */}
-            <line
-              x1={line.a.x}
-              y1={line.a.y}
-              x2={line.b.x}
-              y2={line.b.y}
+            <path
+              d={d}
+              fill="none"
               stroke="transparent"
-              strokeWidth={14}
+              strokeWidth={Math.max(14, style.width + 10)}
               pointerEvents="stroke"
               style={{ cursor: 'pointer' }}
               onPointerDown={(e) => {
@@ -96,10 +118,10 @@ export default function EdgesLayer() {
           y1={preview.a.y}
           x2={preview.b.x}
           y2={preview.b.y}
-          stroke={COLOR_SELECTED}
+          stroke={ACCENT}
           strokeWidth={2}
           strokeDasharray="6 4"
-          markerEnd="url(#baonote-arrow-selected)"
+          markerEnd="url(#baonote-arrow-preview)"
         />
       )}
     </svg>

@@ -4,6 +4,7 @@ import Sidebar from './Sidebar.jsx'
 import BottomToolbar from './BottomToolbar.jsx'
 import ZoomControl from '../components/ZoomControl.jsx'
 import ExportButton from '../components/ExportButton.jsx'
+import EdgeStylePanel from '../components/Canvas/EdgeStylePanel.jsx'
 import { useCanvasStore } from '../state/useCanvasStore'
 
 /**
@@ -32,6 +33,7 @@ export default function AppShell() {
       <Sidebar />
 
       <BottomToolbar />
+      <EdgeStylePanel />
       <div className="absolute bottom-4 left-4 z-20">
         <ZoomControl zoom={zoom} onZoomChange={handleZoomChange} />
       </div>

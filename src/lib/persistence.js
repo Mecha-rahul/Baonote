@@ -1,5 +1,6 @@
 import { createJSONStorage } from 'zustand/middleware'
 import { clampZoom } from './coords'
+import { resolveEdgeStyle } from './edgeStyle'
 
 const STORAGE_KEY = 'baonote-board'
 const SAVE_DELAY = 500 // ms of quiet before we write
@@ -75,19 +76,22 @@ function sanitize(persisted) {
     )
   }
 
-  // arrows: both ends must be real cards that survived the filter above
+  // arrows: both ends must be real cards that survived the filter above.
+  // Old saves have no `style`; resolveEdgeStyle fills in defaults and drops bad values.
   if (persisted && Array.isArray(persisted.edges)) {
     const cardIds = new Set((out.cards || []).map((c) => c.id))
-    out.edges = persisted.edges.filter(
-      (e) =>
-        e &&
-        typeof e.id === 'string' &&
-        typeof e.fromId === 'string' &&
-        typeof e.toId === 'string' &&
-        e.fromId !== e.toId &&
-        cardIds.has(e.fromId) &&
-        cardIds.has(e.toId)
-    )
+    out.edges = persisted.edges
+      .filter(
+        (e) =>
+          e &&
+          typeof e.id === 'string' &&
+          typeof e.fromId === 'string' &&
+          typeof e.toId === 'string' &&
+          e.fromId !== e.toId &&
+          cardIds.has(e.fromId) &&
+          cardIds.has(e.toId)
+      )
+      .map((e) => ({ ...e, style: resolveEdgeStyle(e) }))
   }
 
   const v = persisted && persisted.viewport

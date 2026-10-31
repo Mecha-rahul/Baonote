@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { persistOptions } from '../lib/persistence'
 import { zoomAt } from '../lib/coords'
+import { DEFAULT_EDGE_STYLE, resolveEdgeStyle } from '../lib/edgeStyle'
 
 const MAX_HISTORY = 100 // how many undo steps we keep
 const OFFSET = 24 // how far duplicates/pastes shift, in canvas units
@@ -55,7 +56,7 @@ export const useCanvasStore = create(
     (set) => ({
   viewport: { zoom: 1, offsetX: 0, offsetY: 0 },
   cards: [],
-  edges: [], // arrows: { id, fromId, toId }
+  edges: [], // arrows: { id, fromId, toId, style } (style: see lib/edgeStyle.js)
   selectedIds: [],
   selectedEdgeId: null, // one selected arrow (or null)
   connecting: null, // while dragging a new arrow: { fromId, x, y } (x, y = canvas coords)
@@ -278,7 +279,12 @@ export const useCanvasStore = create(
           (e.fromId === toId && e.toId === c.fromId)
       )
       if (exists) return done
-      const edge = { id: crypto.randomUUID(), fromId: c.fromId, toId }
+      const edge = {
+        id: crypto.randomUUID(),
+        fromId: c.fromId,
+        toId,
+        style: { ...DEFAULT_EDGE_STYLE },
+      }
       return {
         ...done,
         ...pushHistory(s),
@@ -291,6 +297,22 @@ export const useCanvasStore = create(
   cancelConnect: () => set({ connecting: null }),
 
   selectEdge: (id) => set({ selectedEdgeId: id, selectedIds: [], editingId: null }),
+
+  // change an arrow's look, e.g. { color: 'red' } or { dash: 'dashed' }. One undo step.
+  updateEdgeStyle: (id, patch) =>
+    set((s) => {
+      const edge = s.edges.find((e) => e.id === id)
+      if (!edge) return s
+      const current = resolveEdgeStyle(edge)
+      // clicking the option that is already active: nothing to do, no undo step
+      if (Object.keys(patch).every((k) => current[k] === patch[k])) return s
+      return {
+        ...pushHistory(s),
+        edges: s.edges.map((e) =>
+          e.id === id ? { ...e, style: { ...current, ...patch } } : e
+        ),
+      }
+    }),
 
   // ----- selection -----
   // click: select only this card and bring it to the front (kept from before)
