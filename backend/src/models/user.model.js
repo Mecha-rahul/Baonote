@@ -36,11 +36,10 @@ const userSchema = new Schema(
 );
 
 //to hash the pass before we use it
-userSchema.pre("save", async function (next){
-  if(!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password , 10)
-  next()
-})
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+  this.password = await bcrypt.hash(this.password, 10);
+});
 
 //tounhash / decrypt the pass
 userSchema.methods.isPasswordCorrect  = async function (password){
