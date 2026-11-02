@@ -27,10 +27,6 @@ const userSchema = new Schema(
       default: "dark" },
     },
 
-    refreshToken: {
-      type: String,
-      select: false, 
-    },
   },
   { timestamps: true }
 );

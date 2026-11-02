@@ -1,9 +1,11 @@
-import asyncHandler from "../utils/asyncHandler"
-import ApiError from "../utils/apiError"
-import { verifyJWT } from "../middleware/auth.middleware"
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import jwt from "jsonwebtoken"
+import { User } from "../models/user.model.js";
+import verifyJWT  from "../middleware/auth.middleware";
+import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+
 
 const registerUser = asyncHandler(async (req, res) => {
   const { username, password } = req.body
@@ -43,21 +45,17 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findOne({ email }).select("+password")
-
   if (!user) {
     throw new ApiError(401, "Invalid email or password.")
   }
 
   const isValid = await user.isPasswordCorrect(password)
-
   if (!isValid) {
     throw new ApiError(401, "Invalid email or password.")
   }
 
   const accessToken = user.generateAccessToken()
-
   const loggedInUser = await User.findById(user._id)
-    .select("-password -refreshToken")
 
   const options = {
     httpOnly: true,
@@ -68,13 +66,7 @@ const loginUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
-    .json(
-      new ApiResponse(
-        200,
-        { user: loggedInUser, accessToken },
-        "Logged in successfully"
-      )
-    )
+    .json(new ApiResponse(200, { user: loggedInUser, accessToken }, "Logged in successfully"))
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -89,3 +81,5 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, req.user, "Current user fetched"))
 })
+
+export { registerUser, loginUser, logoutUser, getCurrentUser };
