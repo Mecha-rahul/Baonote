@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/user.routes.js";
+import boardRouter from "./routes/board.routes.js"
 
 const app = express();
 
@@ -15,8 +16,9 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", userRouter);
+app.use("/api/boards" , boardRouter ) ;
 
-// must be LAST: turns thrown errors into JSON
+
 app.use((err, _req, res, _next) => {
   res.status(err.statusCode || 500).json({
     success: false,

@@ -2,9 +2,6 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.model.js";
-import verifyJWT  from "../middleware/auth.middleware";
-import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -75,6 +72,12 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("accessToken", cookieOptions)
     .json(new ApiResponse(200, {}, "Logged out successfully"))
 })
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+}
 
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res

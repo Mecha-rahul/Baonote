@@ -7,8 +7,10 @@
 Plan projects, map out ideas, collect snippets, and keep everything in one place, on an infinite board that feels fast.
 
 
-<!-- Add a screenshot or demo GIF here -->
-<!-- ![Baonote screenshot](./docs/screenshot.png) -->
+
+![Baonote screenshot](./public/baonote_v1.png) 
+
+![Baonote Architecture design in Baonote itself](./public/baonotev1.png) 
 
 </div>
 
@@ -44,9 +46,9 @@ Baonote gives you a visual board where all of that lives together. It's built wi
 |---|---|
 | Frontend | React, JavaScript (JSX), Vite, Tailwind CSS |
 | State | Zustand |
-| Backend (planned) | Node.js, Express or Fastify |
-| Database (planned) | PostgreSQL |
-| Auth (planned) | JWT with httpOnly cookies |
+| Backend | Node.js, Express  |
+| Database  | MongoDB |
+| Auth | JWT with httpOnly cookies |
 | Storage (planned) | Cloudflare R2, S3, or Cloudinary |
 
 ## Getting Started
@@ -124,7 +126,7 @@ baonote/
 - [ ] Dark and light theme polish
 
 **Backend**
-- [ ] User accounts and authentication
+- [x] User accounts and authentication
 - [ ] Save and load boards from a database
 - [ ] Image uploads
 - [ ] Link previews
