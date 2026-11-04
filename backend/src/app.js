@@ -3,11 +3,13 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/user.routes.js";
 import boardRouter from "./routes/board.routes.js"
+import itemRouter from "./routes/item.routes.js";
+import edgeRouter from "./routes/edge.routes.js"
 
 const app = express();
 
 app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
-app.use(express.json({ limit: "16kb" }));
+app.use(express.json({ limit: "1mb" }));  
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(cookieParser());
 
@@ -17,6 +19,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", userRouter);
 app.use("/api/boards" , boardRouter ) ;
+app.use("/api", itemRouter); 
+app.use("/api" , edgeRouter);
 
 
 app.use((err, _req, res, _next) => {
