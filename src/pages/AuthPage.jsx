@@ -1,159 +1,266 @@
-import { useState } from 'react'
-import api from '../api/axios'
 
-/**
- * Hand-drawn style background lines for the right side.
- * Sits behind the form (z-0, no pointer events). To recolor, change the
- * two stroke values below; to make them stronger or softer, change opacity.
- */
-const LINE_MAIN = 'rgb(var(--rgb-accent))' // thick wavy line
-const LINE_SOFT = 'rgb(var(--rgb-muted))' // thin curls and big arc
+import { useState } from "react";
 
-function DecorLines() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-0 h-full w-full"
-      viewBox="0 0 1000 800"
-      preserveAspectRatio="xMidYMid slice"
-      fill="none"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {/* small curl at the top */}
-      <path
-        d="M 215 -10 C 205 40 190 85 235 95 C 285 105 300 55 262 38 C 238 28 228 50 245 62"
-        stroke={LINE_SOFT}
-        strokeWidth="6"
-        opacity="0.45"
-      />
-      {/* long soft loop at the top, runs off the top edge */}
-      <path
-        d="M 120 -10 C 110 70 170 130 330 120 C 450 112 520 50 505 -10"
-        stroke={LINE_SOFT}
-        strokeWidth="6"
-        opacity="0.35"
-      />
-      {/* big arc sweeping from the top right down to the bottom middle */}
-      <path
-        d="M 1010 90 C 1015 420 930 650 640 790 C 600 808 560 812 520 815"
-        stroke={LINE_SOFT}
-        strokeWidth="6"
-        opacity="0.4"
-      />
-      {/* thick wavy line through the middle right, ending sideways */}
-      <path
-        d="M 840 -10 C 720 90 840 140 770 230 C 705 315 780 360 900 372 C 960 378 990 370 1020 362"
-        stroke={LINE_MAIN}
-        strokeWidth="16"
-        opacity="0.5"
-      />
-    </svg>
-  )
-}
+// Images inside public/ are accessed from the root URL
+const brushCorner = "/brush-corner.png";
+const brushRight = "/brush-right.png";
+const brushLeft = "/brush-left.png";
+const star = "/star.png";
+const logo = "/logo.png";
 
-/**
- * Login / Register page.
- * Uses Baonote's real theme tokens (bg-canvas, bg-surface, text-text,
- * text-text-muted, border-border, bg-accent) so it follows light/dark automatically.
- *
- * Props:
- *   onAuthSuccess() - called after the token is saved; App.jsx uses it to show the board.
- */
-export default function AuthPage({ onAuthSuccess }) {
-  const [mode, setMode] = useState('login') // 'login' | 'register'
-  const [form, setForm] = useState({ username: '', email: '', password: '' })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-  const isLogin = mode === 'login'
+// Decoration positions relative to the main card
+const DECOR = [
+  { src: brushLeft, left: 210, top: 90, w: 150, z: 1 },
+  { src: star, left: 124, top: 310, w: 160, z: 1 },
+  { src: brushRight, left: 624, top: 40, w: 160, z: 1 },
+  { src: brushCorner, left: 684, top: -35, w: 135, z: 1 },
+  { src: star, left: 659, top: 75, w: 115, z: 2 },
+];
 
-  const handleChange = (e) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
-    if (error) setError('')
-  }
+const COPY = {
+  login: {
+    title: "Welcome back",
+    sub: "Log in to continue to your boards.",
+    button: "Log in",
+    switchText: "Don't have an account?",
+    switchLink: "Register",
+    endpoint: "/auth/login",
+  },
+  register: {
+    title: "Create your account",
+    sub: "Start planning on your boards.",
+    button: "Register",
+    switchText: "Already have an account?",
+    switchLink: "Log in",
+    endpoint: "/auth/register",
+  },
+};
+
+const inputCls =
+  "w-full h-[40px] rounded-lg bg-[#222224] border border-[#333336] px-3 text-sm text-white placeholder-neutral-500 outline-none focus:border-fuchsia-500";
+
+export default function AuthPage({ onAuthSuccess, onClose }) {
+  const [mode, setMode] = useState("login");
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const c = COPY[mode];
+  const isRegister = mode === "register";
+
+  const onChange = (e) => {
+    setError("");
+    setForm((f) => ({
+      ...f,
+      [e.target.name]: e.target.value,
+    }));
+  };
 
   const switchMode = () => {
-    setMode(isLogin ? 'register' : 'login')
-    setError('')
-  }
+    setMode(isRegister ? "login" : "register");
+    setError("");
+  };
 
-  const login = async (email, password) => {
-    const res = await api.post('/api/auth/login', { email, password })
-    // backend shape: { statusCode, data: { user, accessToken }, message, success }
-    localStorage.setItem('accessToken', res.data.data.accessToken)
-    onAuthSuccess?.()
-  }
+  const validate = () => {
+    if (isRegister && !form.name.trim()) {
+      return "Please enter your name.";
+    }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+      return "Enter a valid email.";
+    }
+
+    if (form.password.length < 8) {
+      return "Password must be at least 8 characters.";
+    }
+
+    return "";
+  };
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+
+    const msg = validate();
+
+    if (msg) {
+      setError(msg);
+      return;
+    }
+
+    setLoading(true);
+    setError("");
 
     try {
-      if (isLogin) {
-        await login(form.email, form.password)
-      } else {
-        await api.post('/api/auth/register', form)
-        // register does not return a token, so log in right after
-        await login(form.email, form.password)
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong. Try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
+      const res = await fetch(API_URL + c.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          isRegister
+            ? {
+                name: form.name.trim(),
+                email: form.email,
+                password: form.password,
+              }
+            : {
+                email: form.email,
+                password: form.password,
+              }
+        ),
+      });
 
-  const inputClass =
-    'w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-text placeholder:text-text-muted outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30'
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(
+          data.message || "Something went wrong."
+        );
+      }
+
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      onAuthSuccess?.(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="flex min-h-screen w-full bg-canvas text-text">
-      {/* LEFT: 1/3 of the screen, semicircle edge, logo + name */}
-      <aside className="hidden w-1/3 shrink-0 items-center justify-center rounded-r-full border-r border-border bg-surface shadow-panel md:flex">
-        <div className="flex flex-col items-center gap-5 pr-12">
+    <div className="min-h-screen w-full bg-[#161618] flex items-center justify-center p-4">
+
+      {/* MAIN CARD */}
+      <div
+        className="
+          relative
+          w-[785px]
+          max-w-full
+          h-[440px]
+          bg-[#1c1c1e]
+          overflow-hidden
+          shrink-0
+        "
+      >
+
+        {/* LAYER 0: LEFT PANEL BACKGROUND */}
+        <div
+          className="
+            absolute
+            left-0
+            top-0
+            h-full
+            w-[262px]
+            rounded-tr-[200px]
+            rounded-br-[200px]
+            bg-[#262628]
+            z-0
+          "
+        />
+
+        {/* LAYER 1 & 2: DECORATIONS */}
+        {DECOR.map((d, i) => (
           <img
-            src="/logo.png"
-            alt="Baonote"
-            className="h-32 w-32 rounded-3xl object-cover shadow-pop"
+            key={i}
+            src={d.src}
+            alt=""
+            draggable={false}
+            className="
+              pointer-events-none
+              select-none
+              absolute
+              max-w-none
+            "
+            style={{
+              left: d.left,
+              top: d.top,
+              width: d.w,
+              height: "auto",
+              zIndex: d.z,
+            }}
           />
-          <h1 className="text-4xl font-semibold tracking-tight">Baonote</h1>
-          <p className="max-w-[230px] text-center text-sm text-text-muted">
+        ))}
+
+        {/* LAYER 3: LEFT PANEL CONTENT */}
+        <div
+          className="
+            absolute
+            left-0
+            top-0
+            h-full
+            w-[262px]
+            flex
+            flex-col
+            items-center
+            justify-center
+            text-center
+            px-8
+            z-10
+          "
+        >
+          <img
+            src={logo}
+            alt="Baonote"
+            draggable={false}
+            className="
+              w-[110px]
+              h-[110px]
+              rounded-[22px]
+              object-cover
+            "
+          />
+
+          <h1 className="mt-5 text-[28px] font-semibold text-white">
+            Baonote
+          </h1>
+
+          <p className="mt-6 text-[13px] leading-snug text-neutral-400">
             A creative planning workspace for developers and students.
           </p>
         </div>
-      </aside>
 
-      {/* RIGHT: form, centered in the remaining 2/3 so it sits right of true center */}
-      <main className="relative flex flex-1 items-center justify-center overflow-hidden px-6">
-        <DecorLines />
-        <div className="relative z-10 w-full max-w-sm">
-          {/* logo only on mobile, where the left panel is hidden */}
-          <div className="mb-8 flex items-center gap-3 md:hidden">
-            <img src="/logo.png" alt="" className="h-10 w-10 rounded-xl object-cover" />
-            <span className="text-2xl font-semibold">Baonote</span>
-          </div>
 
-          <h2 className="text-2xl font-semibold">
-            {isLogin ? 'Welcome back' : 'Create your account'}
+        {/* FORM */}
+        <form
+          onSubmit={onSubmit}
+          noValidate
+          className="
+            absolute
+            left-[359px]
+            top-[100px]
+            w-[330px]
+            z-20
+          "
+        >
+          <h2 className="text-[20px] font-semibold text-white">
+            {c.title}
           </h2>
-          <p className="mb-8 mt-1 text-sm text-text-muted">
-            {isLogin
-              ? 'Log in to continue to your boards.'
-              : 'Start planning your projects in minutes.'}
+
+          <p className="mt-1 text-[12px] text-neutral-400">
+            {c.sub}
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+          {/* INPUTS */}
+          <div className="mt-7 space-y-3">
+
+            {isRegister && (
               <input
                 type="text"
-                name="username"
-                placeholder="Username"
-                value={form.username}
-                onChange={handleChange}
-                required
-                className={inputClass}
+                name="name"
+                placeholder="Name"
+                value={form.name}
+                onChange={onChange}
+                className={inputCls}
               />
             )}
 
@@ -162,9 +269,8 @@ export default function AuthPage({ onAuthSuccess }) {
               name="email"
               placeholder="Email"
               value={form.email}
-              onChange={handleChange}
-              required
-              className={inputClass}
+              onChange={onChange}
+              className={inputCls}
             />
 
             <input
@@ -172,35 +278,53 @@ export default function AuthPage({ onAuthSuccess }) {
               name="password"
               placeholder="Password (min 8 characters)"
               value={form.password}
-              onChange={handleChange}
-              required
-              minLength={8}
-              className={inputClass}
+              onChange={onChange}
+              className={inputCls}
             />
+          </div>
 
-            {error && <p className="text-sm text-red-500">{error}</p>}
+          {/* ERROR */}
+          {error && (
+            <p className="mt-2 text-[12px] text-red-400">
+              {error}
+            </p>
+          )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? 'Please wait...' : isLogin ? 'Log in' : 'Create account'}
-            </button>
-          </form>
+          {/* SUBMIT */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="
+              mt-3
+              w-full
+              h-[38px]
+              rounded-lg
+              bg-fuchsia-500
+              text-sm
+              font-medium
+              text-white
+              hover:bg-fuchsia-400
+              disabled:opacity-60
+              transition-colors
+            "
+          >
+            {loading ? "Please wait..." : c.button}
+          </button>
 
-          <p className="mt-6 text-center text-sm text-text-muted">
-            {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
+          {/* SWITCH LOGIN / REGISTER */}
+          <p className="mt-4 text-center text-[12px] text-neutral-400">
+            {c.switchText}{" "}
+
             <button
               type="button"
               onClick={switchMode}
-              className="font-medium text-accent hover:underline"
+              className="text-fuchsia-400 hover:underline"
             >
-              {isLogin ? 'Register' : 'Log in'}
+              {c.switchLink}
             </button>
           </p>
-        </div>
-      </main>
+        </form>
+      </div>
     </div>
-  )
+  );
 }
