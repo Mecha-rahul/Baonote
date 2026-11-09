@@ -21,6 +21,11 @@ const userSchema = new Schema(
       required: [true, "password is required."],
       select: false, 
     },
+    // SHA-256 hash of the current refresh token (never store the raw token)
+    refreshToken: {
+      type: String,
+      select: false,
+    },
     preferences: {
       theme: { type: String,
       enum: ["light", "dark", "system"],
@@ -44,7 +49,13 @@ userSchema.methods.isPasswordCorrect  = async function (password){
 
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign({ _id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    expiresIn: process.env.JWT_EXPIRES_IN || "15m", // short-lived on purpose
+  });
+};
+
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign({ _id: this._id }, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
   });
 };
 
