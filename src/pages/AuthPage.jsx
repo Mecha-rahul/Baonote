@@ -4,7 +4,7 @@ import { useState } from "react";
 const logo = "/logo.png";
 
 const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 // Decoration positions relative to the main card
 const DECOR = [
@@ -96,7 +96,7 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
         body: JSON.stringify(
           isRegister
             ? {
-                name: form.name.trim(),
+                username: form.name.trim(),
                 email: form.email,
                 password: form.password,
               }
@@ -115,8 +115,13 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
         );
       }
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
+      const accessToken =
+        data?.data?.accessToken ||
+        data?.accessToken ||
+        data?.token;
+
+      if (accessToken) {
+        localStorage.setItem("accessToken", accessToken);
       }
 
       onAuthSuccess?.(data);
