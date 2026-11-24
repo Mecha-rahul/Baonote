@@ -1,11 +1,6 @@
 
 import { useState } from "react";
 
-// Images inside public/ are accessed from the root URL
-const brushCorner = "/brush-corner.png";
-const brushRight = "/brush-right.png";
-const brushLeft = "/brush-left.png";
-const star = "/star.png";
 const logo = "/logo.png";
 
 const API_URL =
@@ -13,13 +8,6 @@ const API_URL =
 
 // Decoration positions relative to the main card
 const DECOR = [
-  { src : brushLeft , left : 315 , top : 180 , w : 120 , z : 1},
-  { src: star, left: 124, top: 310, w: 160, z: 2 },
-  { src: brushRight, left: 624, top: 40, w: 160, z: 1 },
-  { src: brushCorner, left: 684, top: -35, w: 135, z: 1 },
-  { src: brushRight, left: 624, top: 40, w: 160, z: 1 },
-  { src: brushCorner, left: 200, top: 400, w: 135, z: 1 },
-  { src: star, left: 659, top: 75, w: 115, z: 2 },
 ];
 
 const COPY = {
