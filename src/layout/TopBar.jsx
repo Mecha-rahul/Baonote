@@ -16,8 +16,8 @@ export default function TopBar() {
   const toggleSidebar = useUiStore((s) => s.toggleSidebar)
 
   return (
-    <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 p-3">
-      <div className="flex min-w-0 items-center gap-2">
+    <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-1 p-2 sm:gap-3 sm:p-3">
+      <div className="flex min-w-0 items-center gap-1 sm:gap-2">
         <IconBtn
           label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           icon={PanelLeft}

@@ -14,7 +14,7 @@ export default function Sidebar() {
     <aside
       aria-label="Boards"
       aria-hidden={!sidebarOpen}
-      className={`absolute left-3 top-[60px] z-20 w-60 overflow-y-auto rounded-lg border border-border bg-surface shadow-panel transition-[opacity,transform] duration-200 ease-out ${
+      className={`absolute left-3 top-[60px] z-20 w-[calc(100%-24px)] max-w-60 overflow-y-auto rounded-lg border border-border bg-surface shadow-panel transition-[opacity,transform] duration-200 ease-out ${
         sidebarOpen
           ? 'translate-x-0 opacity-100'
           : 'pointer-events-none -translate-x-4 opacity-0'
