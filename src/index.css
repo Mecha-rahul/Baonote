@@ -41,6 +41,8 @@ body,
 
 body {
   @apply overflow-hidden bg-canvas font-sans text-text antialiased;
+  width: 100%;
+  min-width: 320px;
 }
 
 /* Space + drag panning cursor: open hand while Space is held,

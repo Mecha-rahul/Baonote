@@ -128,15 +128,19 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#161618] flex items-center justify-center p-4">
+    <div className="min-h-[100dvh] w-full bg-[#161618] flex items-center justify-center p-3 sm:p-6">
 
       {/* MAIN CARD */}
       <div
         className="
           relative
-          w-[785px]
-          max-w-full
-          h-[440px]
+          flex
+          w-full
+          max-w-[785px]
+          min-h-[440px]
+          sm:h-[440px]
+          flex-col
+          sm:block
           bg-[#1c1c1e]
           overflow-hidden
           shrink-0
@@ -146,13 +150,15 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
         {/* LAYER 0: LEFT PANEL BACKGROUND */}
         <div
           className="
-            absolute
-            left-0
-            top-0
-            h-full
-            w-[262px]
-            rounded-tr-[200px]
-            rounded-br-[200px]
+            hidden
+            sm:absolute
+            sm:left-0
+            sm:top-0
+            sm:block
+            sm:h-full
+            sm:w-[262px]
+            sm:rounded-tr-[200px]
+            sm:rounded-br-[200px]
             bg-[#262628]
             z-0
           "
@@ -184,17 +190,24 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
         {/* LAYER 3: LEFT PANEL CONTENT */}
         <div
           className="
-            absolute
-            left-0
-            top-0
-            h-full
-            w-[262px]
+            relative
+            w-full
+            min-h-[180px]
+            py-5
+            sm:absolute
+            sm:left-0
+            sm:top-0
+            sm:h-full
+            sm:w-[262px]
+            sm:min-h-0
+            sm:py-0
             flex
             flex-col
             items-center
             justify-center
             text-center
-            px-8
+            px-5
+            sm:px-8
             z-10
           "
         >
@@ -203,18 +216,20 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
             alt="Baonote"
             draggable={false}
             className="
-              w-[110px]
-              h-[110px]
+              w-[72px]
+              h-[72px]
+              sm:w-[110px]
+              sm:h-[110px]
               rounded-[22px]
               object-cover
             "
           />
 
-          <h1 className="mt-5 text-[28px] font-semibold text-white">
+          <h1 className="mt-3 text-[22px] sm:mt-5 sm:text-[28px] font-semibold text-white">
             Baonote
           </h1>
 
-          <p className="mt-6 text-[13px] leading-snug text-neutral-400">
+          <p className="mt-2 max-w-[280px] text-[12px] sm:mt-6 sm:text-[13px] leading-snug text-neutral-400">
             A creative planning workspace for developers and students.
           </p>
         </div>
@@ -225,10 +240,16 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
           onSubmit={onSubmit}
           noValidate
           className="
-            absolute
-            left-[359px]
-            top-[100px]
-            w-[330px]
+            relative
+            w-full
+            px-5
+            pb-6
+            sm:absolute
+            sm:left-[359px]
+            sm:top-[100px]
+            sm:w-[330px]
+            sm:px-0
+            sm:pb-0
             z-20
           "
         >

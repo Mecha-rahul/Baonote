@@ -27,12 +27,12 @@ export default function BottomToolbar() {
   }, [setActiveTool])
 
   return (
-    <div className="absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
+    <div className="absolute bottom-16 left-1/2 z-30 w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 overflow-x-auto overscroll-contain sm:bottom-4 sm:w-auto sm:max-w-none">
       <div
         role="toolbar"
         aria-label="Board tools"
         aria-orientation="horizontal"
-        className="flex items-center gap-1 rounded-full border border-border bg-surface px-1.5 py-1.5 shadow-panel"
+        className="mx-auto flex w-max items-center gap-1 rounded-full border border-border bg-surface px-1.5 py-1.5 shadow-panel"
       >
         {TOOLS.map((tool, i) =>
           tool.divider ? (

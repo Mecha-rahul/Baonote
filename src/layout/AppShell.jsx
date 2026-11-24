@@ -34,10 +34,10 @@ export default function AppShell() {
 
       <BottomToolbar />
       <EdgeStylePanel />
-      <div className="absolute bottom-4 left-4 z-20">
+      <div className="absolute bottom-3 left-3 z-20 sm:bottom-4 sm:left-4">
         <ZoomControl zoom={zoom} onZoomChange={handleZoomChange} />
       </div>
-      <div className="absolute bottom-4 right-4 z-20">
+      <div className="absolute bottom-3 right-3 z-20 sm:bottom-4 sm:right-4">
         <ExportButton />
       </div>
     </div>

@@ -59,11 +59,11 @@ export default function EdgeStylePanel() {
   const set = (patch) => updateEdgeStyle(edge.id, patch)
 
   return (
-    <div className="absolute bottom-20 left-1/2 z-30 -translate-x-1/2">
+    <div className="absolute bottom-32 left-1/2 z-30 w-[calc(100%-24px)] max-w-[520px] -translate-x-1/2 overflow-x-auto overscroll-contain sm:bottom-20 sm:w-auto sm:max-w-none">
       <div
         role="toolbar"
         aria-label="Arrow style"
-        className="flex items-center gap-0.5 rounded-xl border border-border bg-surface px-1.5 py-1 shadow-panel"
+        className="mx-auto flex w-max items-center gap-0.5 rounded-xl border border-border bg-surface px-1.5 py-1 shadow-panel"
       >
         {/* color */}
         <div className="flex items-center gap-1.5 px-1">

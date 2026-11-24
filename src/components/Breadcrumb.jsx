@@ -17,7 +17,7 @@ export default function Breadcrumb() {
           <button
             type="button"
             aria-current={seg.current ? 'page' : undefined}
-            className={`truncate text-sm leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+            className={`max-w-[92px] truncate text-sm leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:max-w-none ${
               seg.current
                 ? 'font-semibold text-text underline-offset-4 hover:underline'
                 : 'text-text-muted hover:text-text'
