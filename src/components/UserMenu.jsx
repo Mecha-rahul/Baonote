@@ -39,7 +39,7 @@ export default function UserMenu() {
         aria-label="More options"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition-[background-color,color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent hover:bg-surface-hover hover:text-text active:scale-95"
+        className="inline-flex h-9 w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition-[background-color,color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent hover:bg-surface-hover hover:text-text active:scale-95"
       >
         <EllipsisVertical size={18} strokeWidth={1.75} aria-hidden="true" />
       </button>

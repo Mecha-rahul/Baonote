@@ -16,7 +16,7 @@ export default function TopBar() {
   const toggleSidebar = useUiStore((s) => s.toggleSidebar)
 
   return (
-    <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 p-3">
+    <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
       <div className="flex min-w-0 items-center gap-2">
         <IconBtn
           label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
@@ -29,9 +29,11 @@ export default function TopBar() {
         <Breadcrumb />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <ThemeToggle />
-        <UserAvatar />
+        <div className="hidden sm:block">
+          <UserAvatar />
+        </div>
         <UserMenu />
       </div>
     </header>

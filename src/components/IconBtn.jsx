@@ -30,7 +30,7 @@ export default function IconBtn({
         onClick={onClick}
         disabled={disabled}
         aria-label={label}
-        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-[background-color,border-color,color,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-40 active:scale-95 ${variants[variant]} ${className}`}
+        className={`inline-flex h-9 w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 items-center justify-center rounded-lg border transition-[background-color,border-color,color,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-40 active:scale-95 ${variants[variant]} ${className}`}
         {...rest}
       >
         <Icon size={18} strokeWidth={1.75} aria-hidden="true" />

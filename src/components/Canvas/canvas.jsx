@@ -17,6 +17,8 @@ export default function Canvas() {
   const panRef = useRef(null) // { lastX, lastY } while panning, else null
   const marqueeRef = useRef(null) // { startX, startY, baseIds, active } while drag-selecting
   const lastCreatedRef = useRef(0) // time a card was last created (to ignore its double-click)
+  const touchesRef = useRef(new Map()) // pointerId -> {x, y} for every finger currently down
+  const pinchRef = useRef(null) // { dist, midX, midY } while two fingers are down, else null
   const [marqueeRect, setMarqueeRect] = useState(null) // the visible box, in screen pixels
 
   const viewport = useCanvasStore((s) => s.viewport)
@@ -89,6 +91,62 @@ export default function Canvas() {
     }
   }
 
+  // ----- touch: pinch to zoom, two fingers to pan -----
+  // These run in the CAPTURE phase, so they see the touch even when it lands on a
+  // card (cards stop pointer events from bubbling up to the canvas).
+  const pinchMetrics = () => {
+    const [a, b] = [...touchesRef.current.values()]
+    return {
+      dist: Math.hypot(a.x - b.x, a.y - b.y),
+      midX: (a.x + b.x) / 2,
+      midY: (a.y + b.y) / 2,
+    }
+  }
+
+  const handlePointerDownCapture = (e) => {
+    if (e.pointerType !== 'touch') return
+    touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+    if (touchesRef.current.size === 2) {
+      // second finger down: stop any one-finger pan / drag-select and start pinching
+      panRef.current = null
+      marqueeRef.current = null
+      setMarqueeRect(null)
+      pinchRef.current = pinchMetrics()
+      e.stopPropagation()
+    } else if (touchesRef.current.size > 2) {
+      e.stopPropagation()
+    }
+  }
+
+  const handlePointerMoveCapture = (e) => {
+    if (e.pointerType !== 'touch' || !touchesRef.current.has(e.pointerId)) return
+    touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (!pinchRef.current) return
+
+    e.stopPropagation() // while pinching, nothing underneath (cards, marquee) should react
+    if (touchesRef.current.size < 2) return
+
+    const prev = pinchRef.current
+    const next = pinchMetrics()
+    const rect = containerRef.current.getBoundingClientRect()
+    const { panBy, zoomAtPoint } = useCanvasStore.getState()
+
+    panBy(next.midX - prev.midX, next.midY - prev.midY) // two-finger drag = pan
+    if (prev.dist > 0) {
+      // fingers moving apart / together = zoom around the point between them
+      const zoom = useCanvasStore.getState().viewport.zoom
+      zoomAtPoint(next.midX - rect.left, next.midY - rect.top, zoom * (next.dist / prev.dist))
+    }
+    pinchRef.current = next
+  }
+
+  const handleTouchEndCapture = (e) => {
+    if (e.pointerType !== 'touch') return
+    touchesRef.current.delete(e.pointerId)
+    if (touchesRef.current.size < 2) pinchRef.current = null
+  }
+
   const handlePointerDown = (e) => {
     const store = useCanvasStore.getState()
 
@@ -108,6 +166,15 @@ export default function Canvas() {
     if (isCardTool(activeTool)) {
       createCardAt(activeTool, point, activeTool === 'link')
       setActiveTool('select')
+      return
+    }
+
+    // touch screen: one finger on empty canvas pans the board (a phone has no
+    // mouse wheel, middle button or Space key). Drag-select stays a mouse feature.
+    if (e.pointerType === 'touch') {
+      store.clearSelection()
+      panRef.current = { lastX: e.clientX, lastY: e.clientY }
+      e.currentTarget.setPointerCapture(e.pointerId)
       return
     }
 
@@ -179,6 +246,10 @@ export default function Canvas() {
         backgroundSize: `${gap}px ${gap}px`,
         backgroundPosition: `${viewport.offsetX}px ${viewport.offsetY}px`,
       }}
+      onPointerDownCapture={handlePointerDownCapture}
+      onPointerMoveCapture={handlePointerMoveCapture}
+      onPointerUpCapture={handleTouchEndCapture}
+      onPointerCancelCapture={handleTouchEndCapture}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

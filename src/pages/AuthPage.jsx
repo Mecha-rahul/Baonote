@@ -42,7 +42,7 @@ const COPY = {
 };
 
 const inputCls =
-  "w-full h-[40px] rounded-lg bg-[#222224] border border-[#333336] px-3 text-sm text-white placeholder-neutral-500 outline-none focus:border-fuchsia-500";
+  "w-full h-[44px] md:h-[40px] rounded-lg bg-[#222224] border border-[#333336] px-3 text-base md:text-sm text-white placeholder-neutral-500 outline-none focus:border-fuchsia-500";
 
 export default function AuthPage({ onAuthSuccess, onClose }) {
   const [mode, setMode] = useState("login");
@@ -140,7 +140,8 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#161618] flex items-center justify-center p-4">
+    <div className="fixed inset-0 overflow-y-auto bg-[#161618]">
+    <div className="flex min-h-full w-full items-center justify-center p-4">
 
       {/* MAIN CARD */}
       <div
@@ -148,7 +149,9 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
           relative
           w-[785px]
           max-w-full
-          h-[440px]
+          md:h-[440px]
+          rounded-2xl
+          md:rounded-none
           bg-[#1c1c1e]
           overflow-hidden
           shrink-0
@@ -158,6 +161,8 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
         {/* LAYER 0: LEFT PANEL BACKGROUND */}
         <div
           className="
+            hidden
+            md:block
             absolute
             left-0
             top-0
@@ -178,6 +183,8 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
             alt=""
             draggable={false}
             className="
+              hidden
+              md:block
               pointer-events-none
               select-none
               absolute
@@ -196,17 +203,20 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
         {/* LAYER 3: LEFT PANEL CONTENT */}
         <div
           className="
-            absolute
-            left-0
-            top-0
-            h-full
-            w-[262px]
+            relative
+            md:absolute
+            md:left-0
+            md:top-0
+            md:h-full
+            md:w-[262px]
             flex
             flex-col
             items-center
             justify-center
             text-center
             px-8
+            pt-8
+            md:pt-0
             z-10
           "
         >
@@ -215,18 +225,20 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
             alt="Baonote"
             draggable={false}
             className="
-              w-[110px]
-              h-[110px]
+              w-[72px]
+              h-[72px]
+              md:w-[110px]
+              md:h-[110px]
               rounded-[22px]
               object-cover
             "
           />
 
-          <h1 className="mt-5 text-[28px] font-semibold text-white">
+          <h1 className="mt-3 md:mt-5 text-[24px] md:text-[28px] font-semibold text-white">
             Baonote
           </h1>
 
-          <p className="mt-6 text-[13px] leading-snug text-neutral-400">
+          <p className="mt-2 md:mt-6 text-[13px] leading-snug text-neutral-400">
             A creative planning workspace for developers and students.
           </p>
         </div>
@@ -237,10 +249,16 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
           onSubmit={onSubmit}
           noValidate
           className="
-            absolute
-            left-[359px]
-            top-[100px]
-            w-[330px]
+            relative
+            w-full
+            px-6
+            pt-6
+            pb-8
+            md:p-0
+            md:absolute
+            md:left-[359px]
+            md:top-[100px]
+            md:w-[330px]
             z-20
           "
         >
@@ -299,7 +317,8 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
             className="
               mt-3
               w-full
-              h-[38px]
+              h-[44px]
+              md:h-[38px]
               rounded-lg
               bg-fuchsia-500
               text-sm
@@ -327,6 +346,7 @@ export default function AuthPage({ onAuthSuccess, onClose }) {
           </p>
         </form>
       </div>
+    </div>
     </div>
   );
 }

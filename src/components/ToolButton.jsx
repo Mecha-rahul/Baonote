@@ -14,7 +14,7 @@ export default function ToolButton({ tool, active, onClick }) {
         onClick={onClick}
         aria-label={tool.label}
         aria-pressed={active}
-        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg transition-[background-color,color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-95 ${
+        className={`inline-flex h-9 w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 items-center justify-center rounded-lg transition-[background-color,color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-95 ${
           active
             ? 'bg-accent-soft text-accent hover:bg-accent-soft'
             : 'text-text-muted hover:bg-surface-hover hover:text-text'

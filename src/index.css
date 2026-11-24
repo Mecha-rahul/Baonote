@@ -41,6 +41,15 @@ body,
 
 body {
   @apply overflow-hidden bg-canvas font-sans text-text antialiased;
+  overscroll-behavior: none; /* no pull-to-refresh / rubber-band on phones */
+}
+
+/* scrollable row with no visible scrollbar (used by toolbars on small screens) */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Space + drag panning cursor: open hand while Space is held,

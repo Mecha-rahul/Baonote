@@ -8,7 +8,7 @@ export default function UserAvatar() {
       <button
         type="button"
         aria-label="Account"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-text-muted transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent hover:bg-surface-hover hover:text-text active:scale-95"
+        className="inline-flex h-9 w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 items-center justify-center rounded-full border border-border bg-surface text-text-muted transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent hover:bg-surface-hover hover:text-text active:scale-95"
       >
         <UserRound size={16} strokeWidth={1.75} aria-hidden="true" />
       </button>
